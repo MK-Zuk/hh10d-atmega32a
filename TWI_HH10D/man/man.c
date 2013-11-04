@@ -35,6 +35,7 @@ int main(void)
 {
     uint8_t bufor[4];
 	uint8_t i;
+	
 	timerdata.bytes[lo] = 0;
 	timerdata.bytes[hi] =0;
 	
@@ -61,6 +62,7 @@ int main(void)
 		LCD_GoTo(0,1);
 		LCD_WriteHexShort(timerdata.bytes[hi]);
 		LCD_WriteHexShort(timerdata.bytes[lo]);
+		LCD_WriteData(' ');
 		_delay_ms(1000);
     }
 }
@@ -70,18 +72,34 @@ void TIMER1_Init(void)
 {
 	TCCR1B |= _BV(ICNC1);	//noise canceler
 	TCCR1B |= _BV(ICES1);	//zbocze narastajace
-	TCCR1B |= _BV(CS12);// | _BV(CS11);// | _BV(CS12);	//preskaler 256
+	TCCR1B |= _BV(CS10);// | _BV(CS11);// | _BV(CS12);	//preskaler 1
 							//zliczanie normalne w gore
 	TCNT1 = TIMER1_START_VALUE;
 	TIMSK|= _BV(TOIE1);		//przerwanie na przepelnienie
+	TIMSK |= _BV(TICIE1);		//przerwanie na zewnetrzny sygnal
 }
 
 ISR(TIMER1_OVF_vect)
 {
 	TCNT1 = TIMER1_START_VALUE;
-	timerdata.word = ICR1;
-	ICR1 = 0;
+	//timerdata.bytes[lo]=ICR1L;
+	//timerdata.bytes[hi]=ICR1H;
+	//ICR1L = 0;
+	//ICR1H = 0;
 	PORTB ^= _BV(6);
 }
 
+ISR(TIMER1_CAPT_vect)
+{
+	static uint8_t timericr;
+	static uint16_t timerold;
+	timericr = ICR1;
+	if(timericr>timerold)
+	{
+		timerdata.word = timericr-timerold;
+		timerdata.word = 8000000/timerdata.word;
+	}
+	timerold = timericr;
+	
+}
 

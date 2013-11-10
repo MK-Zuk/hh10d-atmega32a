@@ -15,7 +15,7 @@
 #define BAUD_8MHZ_19200 25	//err 0,2
 #define BAUD_8MHZ_38400 12	//err 0,2
 
-#define BUFFER_SIZE	6
+#define BUFFER_SIZE	10
 #define SEND		0
 #define RECEIVE		1
 

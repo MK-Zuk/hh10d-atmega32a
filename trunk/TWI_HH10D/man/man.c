@@ -17,10 +17,6 @@
 #define ADRES	0xA2
 #define TIMER1_START_VALUE	34286	//ustala punkt statrowy dla rejestru timer1 na czas 1s
 
-char config[] ={"Czujnik HH10D\n\rDane konfiguracyjne: "};
-char pomiar[] ={"\n\rWynik pomiaru: "};
-
-
 enum bytes  {lo,hi};
 
 union uint16_tim
@@ -38,26 +34,18 @@ int main(void)
 {
     uint8_t bufor[4];
 	uint8_t conf[4];
-	uint8_t buf[BUFFER_SIZE];
-	uint8_t i;
 	
 	timerdata.bytes[lo] = 0;
 	timerdata.bytes[hi] =0;
 	
 	DDRB = 0xFF;
 	
-	//LCD_Initalize();
-	//LCD_Home();
-	//LCD_WriteData('s');
 	USART_initInt(BAUD_8MHZ_9600);
 	_delay_ms(400);
 	
 	I2C_Init(24,PRESC_4);
 	
 	I2C_ReadBuf(ADRES,10,4,conf);
-	//LCD_Home();
-	//USART_WriteStrShort(config);
-	//for(i=0;i<4;i++) USART_WriteHexShort(bufor[i]);
 	
 	TIMER1_Init();
 	sei();
@@ -65,40 +53,22 @@ int main(void)
 	while(1)
     {
         //TODO:: Please write your application code 
-		//LCD_GoTo(0,1);
 		
 		if(USART_flag & _BV(RECEIVE))
 		{
 			if(USART_readInt() == 'a')
 			{
-				buf[0]='s';
-				buf[1]=0x00;
-				buf[2]=timerdata.bytes[hi];
-				buf[3]=timerdata.bytes[lo];
-				buf[4]=0x00;
-				buf[5]=0x0A;
-				USART_sendInt(buf);
+				bufor[0]=timerdata.bytes[hi];
+				bufor[1]=timerdata.bytes[lo];
+				bufor[2]=timerdata.bytes[hi];
+				bufor[3]=timerdata.bytes[lo];
+				USART_sendInt(bufor);
 			}
 			if(USART_readInt() == 'c')
 			{
-				buf[0]='s';
-				buf[1]=conf[0];
-				buf[2]=conf[1];
-				buf[3]=conf[2];
-				buf[4]=conf[3];
-				buf[5]=0x0A;
-				USART_sendInt(buf);
-			}
-			
+				USART_sendInt(conf);
+			}	
 		}
-		
-		//USART_WriteStrShort(pomiar);
-		//USART_WriteHexShort(timerdata.bytes[hi]);
-		//USART_WriteHexShort(timerdata.bytes[lo]);
-		//USART_softsend(' ');
-		//USART_WriteHexShort(62500/timerdata.bytes[hi]);
-		//USART_softsend(' ');
-		//_delay_ms(1000);
     }
 }
 
@@ -131,8 +101,7 @@ ISR(TIMER1_CAPT_vect)
 	timericr = ICR1;
 	if(timericr>timerold)
 	{
-		timerdata.word = timericr-timerold;
-		timerdata.bytes[hi]=timerdata.bytes[lo]>>4;
+		timerdata.word = timericr;
 	}
 	timerold = timericr;
 	

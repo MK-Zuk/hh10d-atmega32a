@@ -8,8 +8,19 @@
 
 #include "usart_lib.h"
 
+enum bytes  {lo,hi};
+	
+typedef union Two_bytes_union
+{
+	uint8_t bytes[2];
+	uint16_t word;
+} USART_union;
+
 volatile static uint8_t buffer[BUFFER_SIZE];
 volatile uint8_t num;
+
+USART_union HextoChar(uint8_t data);
+uint8_t CharToHex(USART_union data);
 
 void USART_initInt(uint16_t baud)
 {
@@ -65,13 +76,22 @@ void USART_init(uint16_t baud)
 
 void USART_sendInt(uint8_t *buff)
 {
+	while (USART_flag);
 	if (!USART_flag)	//brak aktywnej transmisji z przerwaniami
 	{
-		
-		for (num=0; num<BUFFER_SIZE; num++)	buffer[num] = buff[num];
+		buffer[0] = 's';
+		buffer[1] = HextoChar(buff[0]).bytes[hi];
+		buffer[2] = HextoChar(buff[0]).bytes[lo];
+		buffer[3] = HextoChar(buff[1]).bytes[hi];
+		buffer[4] = HextoChar(buff[1]).bytes[lo];
+		buffer[5] = HextoChar(buff[2]).bytes[hi];
+		buffer[6] = HextoChar(buff[2]).bytes[lo];
+		buffer[7] = HextoChar(buff[3]).bytes[hi];
+		buffer[8] = HextoChar(buff[3]).bytes[lo];
+		buffer[9] = 0x0A;
 		
 		num = 0;
-		UDR=buff[num++];
+		UDR=buffer[num++];
 		USART_flag |= _BV(SEND);
 		UCSRB |= _BV(TXCIE);
 	}
@@ -184,3 +204,43 @@ void USART_WriteStrShort(char *string)
 	while(!(string[i]=='\0')) USART_softsend(string[i++]);
 }
 
+
+USART_union HextoChar(uint8_t data)
+{
+	USART_union hout;
+	uint8_t hib, lob;
+	
+	hib=data & 0xF0;
+	hib=hib >>4;
+	lob=data & 0x0F;
+	if(hib<10)
+	{hout.bytes[hi] = (hib+'0');
+	}else hout.bytes[hi] = (hib-10+'A');
+	if(lob<10)
+	{hout.bytes[lo] = (lob+'0');
+	}else hout.bytes[lo] = (lob-10+'A');
+	
+	return hout;
+}
+
+uint8_t CharToHex(USART_union data)
+{
+	uint8_t hout;
+	
+	if(data.bytes[hi]>=0)
+	{
+		hout=(data.bytes[hi]-'0');	
+	}else
+	{
+		hout=(data.bytes[hi]+10-'A');
+	}
+	hout = hout << 4;
+	if(data.bytes[lo]>=0)
+	{
+		hout |=(data.bytes[lo]-'0');
+	}else
+	{
+		hout |=(data.bytes[lo]+10-'A');
+	}
+	return hout;
+}

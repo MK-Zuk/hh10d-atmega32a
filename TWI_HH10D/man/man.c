@@ -37,6 +37,7 @@ void TIMER1_Init(void);
 int main(void)
 {
     uint8_t bufor[4];
+	uint8_t conf[4];
 	uint8_t buf[BUFFER_SIZE];
 	uint8_t i;
 	
@@ -53,10 +54,10 @@ int main(void)
 	
 	I2C_Init(24,PRESC_4);
 	
-	I2C_ReadBuf(ADRES,10,4,bufor);
+	I2C_ReadBuf(ADRES,10,4,conf);
 	//LCD_Home();
-	USART_WriteStrShort(config);
-	for(i=0;i<4;i++) USART_WriteHexShort(bufor[i]);
+	//USART_WriteStrShort(config);
+	//for(i=0;i<4;i++) USART_WriteHexShort(bufor[i]);
 	
 	TIMER1_Init();
 	sei();
@@ -70,15 +71,25 @@ int main(void)
 		{
 			if(USART_readInt() == 'a')
 			{
-				buf[0] = 0x0A;
-				buf[1] = 0x00;
-				buf[2] = timerdata.bytes[hi];
-				buf[3] = timerdata.bytes[lo];
-				buf[4] = 0x00;
-				buf[5] = 0x0A;
+				buf[0]='s';
+				buf[1]=0x00;
+				buf[2]=timerdata.bytes[hi];
+				buf[3]=timerdata.bytes[lo];
+				buf[4]=0x00;
+				buf[5]=0x0A;
 				USART_sendInt(buf);
-				
 			}
+			if(USART_readInt() == 'c')
+			{
+				buf[0]='s';
+				buf[1]=conf[0];
+				buf[2]=conf[1];
+				buf[3]=conf[2];
+				buf[4]=conf[3];
+				buf[5]=0x0A;
+				USART_sendInt(buf);
+			}
+			
 		}
 		
 		//USART_WriteStrShort(pomiar);
@@ -126,4 +137,3 @@ ISR(TIMER1_CAPT_vect)
 	timerold = timericr;
 	
 }
-
